@@ -7,7 +7,7 @@
 #define SHUTTERDARKSLIDE 0       //1 Enables feature to not eject dark slide until shutter button is pressed
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
-#define FUZZY_MANUAL_MODE 1
+#define FUZZY_MANUAL_MODE 0      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.
@@ -35,6 +35,12 @@
 #define FF600 910
 //---------------END MAGIC NUMBERS-----------------------------------------
 
+//---------------Shutter Button--------------------------------------------
+#define SHUTTER_BUTTON_DEBOUNCE_DELAY 5
+#define SIMULTANEOUS_PRESS_DELAY 300
+#define SIMULTANEOUS_PRESS_WINDOW 25
+//---------------END Shutter Button----------------------------------------
+
 //---------------Flashbar and Dongle Flash---------------------------------
 #define Flash_Capture_Delay 4
 //---------------End Flash settings----------------------------------------
@@ -57,7 +63,6 @@ enum setting_type{
 
 extern const uint8_t POWER_DOWN_DELAY;
 extern const uint8_t Y_DELAY;
-extern const int32_t ShutterSpeed[]; //reduced speeds from 25 (slot5) to compensate flash firing
 
 #if FUZZY_MANUAL_MODE
 struct fuzzy_shutter_speed_timing{

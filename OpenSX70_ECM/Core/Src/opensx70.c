@@ -76,7 +76,7 @@ camera_state do_state_init (void){
     global_start_time = uwTick;
     savedISO = read_iso();
     solenoid_init();
-    
+    initialize_peripheral_device(&current_dongle_state);
     HAL_TIM_Base_Start_IT(&htim14);
     __HAL_ADC_DISABLE_IT(&hadc1, ADC_IT_AWD1);
     HAL_GPIO_WritePin(LM_RESET_GPIO_Port, LM_RESET_Pin, 1);
@@ -99,7 +99,7 @@ camera_state do_state_darkslide (void){
 
     if (HAL_GPIO_ReadPin(S8_GPIO_Port, S8_Pin) && !HAL_GPIO_ReadPin(S9_GPIO_Port, S9_Pin)){
         #if SHUTTERDARKSLIDE
-        if (HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+        if (S1_state.S1T_state){  
         #endif
             darkslide_eject();
             next_state = return_state(&current_dongle_state);
@@ -119,7 +119,7 @@ camera_state do_state_darkslide (void){
 }
 
 camera_state do_state_noDongle (void){
-    if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+    if(S1_state.S1T_state){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
         
@@ -166,7 +166,7 @@ camera_state do_state_noDongle (void){
 }
 
 camera_state do_state_flashBar (void){
-    if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+    if(S1_state.S1T_state){
     if(multiple_exposure_flag){
             mexp_count++;
             if (mexp_count >= 2){
@@ -234,7 +234,7 @@ camera_state do_state_dongle (void){
 
     
 
-    if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+    if(S1_state.S1T_state){
         if(get_switch_state(SELF_TIMER)){
             self_timer();
         }
@@ -248,7 +248,7 @@ camera_state do_state_dongle (void){
 
 camera_state do_state_multi_exp (void){
     bool mexpSwitchStatus = get_switch_state(MEXP_MODE);
-    int delay_ms = 500;
+        int delay_ms = 500;
 
              tx = 0b01111010;
 
@@ -287,9 +287,9 @@ camera_state do_state_multi_exp (void){
             }
             }
         }
-        
 
-    if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+
+    if(S1_state.S1T_state){
         if(mexpSwitchStatus){
             if(get_switch_state(SELF_TIMER)){
                 self_timer();
