@@ -97,7 +97,7 @@ camera_state do_state_init (void){
 camera_state do_state_darkslide (void){
     camera_state next_state = STATE_DARKSLIDE;
 
-    if (HAL_GPIO_ReadPin(S8_GPIO_Port, S8_Pin) && !HAL_GPIO_ReadPin(S9_GPIO_Port, S9_Pin)){
+    if (HAL_GPIO_ReadPin(S8_GPIO_Port, S8_Pin) ){ //original had && !HAL_GPIO_ReadPin(S9_GPIO_Port, S9_Pin) but S9 used for communicator now
         #if SHUTTERDARKSLIDE
         if (S1_state.S1T_state){  
         #endif
