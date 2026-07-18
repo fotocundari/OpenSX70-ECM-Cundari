@@ -8,20 +8,9 @@ bool selfy = false;
 bool tmode = false;
 bool manualmode = false;
 bool loopexit = false;
-bool firstrun = false;
-bool sendonce = true;
-bool empty = false;
-
-
 int manualspeed = 0; 
 int speedselect = 0;
-int mexp_count = 0;
 
-uint8_t off = 0xFF;
-uint8_t on = 0X01; 
-uint8_t tx = 0x0;
-uint32_t global_start_time = 0;
-uint8_t b = 0;
 
 typedef camera_state (*camera_state_funct)(void);
 
@@ -45,38 +34,13 @@ camera_state state = STATE_INIT;
 void opensx70_run_state_machine (void){
     state = STATE_MACHINE[state]();
     sonar_focus();
-    
-    if (counter_response_received) {
-    counter_response_received = false;
-    b = counter_uart_buffer[0];
-    HAL_UART_Receive_IT(&huart1, counter_uart_buffer, 1);
-    if (b == 0xFE){
-        empty = true;
-        modeselection = true;
-        } else if (b == 0xFF) {
-        empty = false;
-        modeselection = false;
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        }
-    }
-
-    if (empty){
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-        HAL_Delay(50);
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        HAL_Delay(50);
-
-    }
 }
 
 camera_state do_state_init (void){
-    global_start_time = uwTick;
     savedISO = read_iso();
     solenoid_init();
-    
+    integrator_init(&savedISO);
+    initialize_peripheral_device(&current_dongle_state);
     HAL_TIM_Base_Start_IT(&htim14);
     __HAL_ADC_DISABLE_IT(&hadc1, ADC_IT_AWD1);
     HAL_GPIO_WritePin(LM_RESET_GPIO_Port, LM_RESET_Pin, 1);
@@ -85,18 +49,17 @@ camera_state do_state_init (void){
         mirror_down();
         shutter_open();
     }
+   
+
     s1_iso_swap();
-    integrator_init(&savedISO);
-    initialize_peripheral_device(&current_dongle_state);
-    HAL_Delay(50);
-    send_counter(0, 1, 1, 0xCC);
+
 
     return STATE_DARKSLIDE;
 }
 
 camera_state do_state_darkslide (void){
     camera_state next_state = STATE_DARKSLIDE;
-
+    HAL_Delay(50);
     if (HAL_GPIO_ReadPin(S8_GPIO_Port, S8_Pin) && !HAL_GPIO_ReadPin(S9_GPIO_Port, S9_Pin)){
         #if SHUTTERDARKSLIDE
         if (HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
@@ -123,14 +86,16 @@ camera_state do_state_noDongle (void){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
         
-      if(multiple_exposure_flag){
+/*       if(multiple_exposure_flag){
             mexp_count++;
             if (mexp_count >= 2){
                 multiple_exposure_flag = false;
                 mexp_count = 0;
             }
         }
-            
+            */ 
+        
+
 
         if(selfy){
             self_timer();
@@ -138,7 +103,6 @@ camera_state do_state_noDongle (void){
         }
 
         begin_exposure();
-        sendonce = true;
         if (tmode){
             time_mode_noflash();
             tmode = false;
@@ -150,31 +114,24 @@ camera_state do_state_noDongle (void){
                 manualmode = false;
             }
             else{
-                
-
-
-                
                 auto_exposure(&savedISO);
             }   
     
     }
     }
-
-    dongleless_display(500);
-    
     return return_state(&current_dongle_state);
 }
 
 camera_state do_state_flashBar (void){
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
-    if(multiple_exposure_flag){
+ /*      if(multiple_exposure_flag){
             mexp_count++;
             if (mexp_count >= 2){
                 multiple_exposure_flag = false;
                 mexp_count = 0;
             }
         }
-          
+        */       
        
         if(selfy){
             self_timer();
@@ -188,7 +145,7 @@ camera_state do_state_flashBar (void){
         } else {
 
             if (manualmode){
-                manual_exposure(&ShutterSpeedTiming[manualspeed]);
+                manual_exposure(ShutterSpeedTiming[manualspeed]);
                 manualmode = false;
             }
             else{
@@ -197,50 +154,16 @@ camera_state do_state_flashBar (void){
 
         }
     }
-    dongleless_display(500);
     return return_state(&current_dongle_state);
 }
 
 camera_state do_state_dongle (void){
-    const uint32_t delay_ms = 500;
-
-
-       
-        if(get_switch_state(SELF_TIMER)){
-             tx = 0b00011110;
-
-
-            if (firstrun == false){
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
-            if(uwTick - global_start_time >= delay_ms){
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (2*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-            }    
-
-        } else if (get_switch_state(SELF_TIMER) == false){
-         if (firstrun == true){
-            send_counter(0, 0, 0, 0);
-            global_start_time = uwTick;
-            firstrun = false; 
-            }
-        }
-
-    
-
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         if(get_switch_state(SELF_TIMER)){
             self_timer();
         }
         begin_exposure();
         dongle_functions();
-
     }
 
     return return_state(&current_dongle_state);
@@ -248,46 +171,6 @@ camera_state do_state_dongle (void){
 
 camera_state do_state_multi_exp (void){
     bool mexpSwitchStatus = get_switch_state(MEXP_MODE);
-    int delay_ms = 500;
-
-             tx = 0b01111010;
-
-        if (multiple_exposure_first_run){
-            if (firstrun == false){
-           send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-            
-
-
-
-
-            if(uwTick - global_start_time >= delay_ms){
-
-            if(get_switch_state(SELF_TIMER) & (uwTick - global_start_time <= (2*delay_ms))){
-            tx = 0b00011110;
-            send_counter(tx, 1, 0, 0);
-
-            } else if (get_switch_state(SELF_TIMER) == false){
-
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (2*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-
-            } else{   
-            
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (3*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-            }
-            }
-        }
-        
 
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         if(mexpSwitchStatus){
@@ -335,63 +218,40 @@ camera_state return_state(peripheral_device *device){
 }
 
 void dongle_functions(void){
-    #if FUZZY_MANUAL_MODE
-    switch (FuzzyShutterSpeedTiming[current_dongle_state.selector].type)
-    #else
-    switch (ShutterSpeedTiming[current_dongle_state.selector].type)
-    #endif
-    {
-        case MANUAL_SPEED:
-            #if FUZZY_MANUAL_MODE
-            fuzzy_manual_exposure(&FuzzyShutterSpeedTiming[current_dongle_state.selector], &savedISO);
-            #else
-            manual_exposure(&ShutterSpeedTiming[current_dongle_state.selector]);
-            #endif
-            break;
-        case T_MODE:
-            time_mode();
-            break;
-        case B_MODE:
-            bulb_mode();
-            break;
-        case AUTO_MODE:
-            auto_exposure(&savedISO);
-            break;
-        case AUTO_F_MODE:
-            auto_exposure_flashbar(&savedISO);
-            break;
-        default:
-            break;
+    if(current_dongle_state.selector < 12){
+        manual_exposure(ShutterSpeedTiming[current_dongle_state.selector]);
+    }
+    else if(ShutterSpeed[current_dongle_state.selector] == POST){
+        time_mode();
+    }
+    else if(ShutterSpeed[current_dongle_state.selector] == POSB){
+        bulb_mode();
+    }
+    else{
+        switch(ShutterSpeed[current_dongle_state.selector]){
+            case AUTO:
+                auto_exposure(&savedISO);
+                break;
+            case AUTO_F:
+                auto_exposure_flashbar(&savedISO);
+                break;
+            default:
+                auto_exposure(&savedISO);
+                break;
+        }
     }
 }
 
 void self_timer(void){
-   
     HAL_GPIO_WritePin(S1F_FBW_GPIO_Port, S1F_FBW_Pin, GPIO_PIN_RESET);
     send_command(PERIPHERAL_SELF_TIMER_CMD);
-    send_counter(0, 0, 0, 0 );
-
-    
-    for (int i = 9; i >= 0; i--){
-        send_counter(i, 1, 0, 0);
-        HAL_Delay(1000);
-    
-        if (i == 3){
-        shutter_close();
-        } else if (i == 2) {
-        HAL_GPIO_WritePin(S1F_FBW_GPIO_Port, S1F_FBW_Pin, GPIO_PIN_SET);
-
-        } else if (i == 0) {
-            mirror_up();
-        }
-
-}
-        if(MEXP_MODE){
-        tx = 0b10000000;
-        send_counter(tx, 1, 0, 0);
-        } else { 
-        send_counter(0, 0, 0, 0);
-        }
+    HAL_Delay(4000);
+    shutter_close();
+    HAL_Delay(2000);
+    mirror_up();
+    HAL_Delay(1000);
+    HAL_GPIO_WritePin(S1F_FBW_GPIO_Port, S1F_FBW_Pin, GPIO_PIN_SET);
+    HAL_Delay(3000);
 }
 
 void ISOBlink(meter_iso *savedISO){
@@ -419,7 +279,7 @@ void ISOBlink(meter_iso *savedISO){
     }
 }
 
-void save_iso(meter_iso *iso) {
+void save_iso(meter_iso iso) {
     HAL_FLASH_Unlock();
     
     FLASH_EraseInitTypeDef eraseInit = {
@@ -430,10 +290,10 @@ void save_iso(meter_iso *iso) {
     uint32_t pageError;
     HAL_FLASHEx_Erase(&eraseInit, &pageError);
     
-    HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_USER_DATA_ADDR, (uint64_t)*iso);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, FLASH_USER_DATA_ADDR, (uint64_t)iso);
     
     HAL_FLASH_Lock();
-    savedISO = *iso;
+    savedISO = iso;
 }
 
 meter_iso read_iso(void) {
@@ -455,13 +315,11 @@ void s1_iso_swap(void){
     bool led2_state = false;    
      uint32_t start_time = uwTick;
     const uint32_t delay_ms = 2000;
-    firstrun = false;
     
   
     
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
-        isoBlinked = true;  
-        modeselection = true;
+
     
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
                 if (!manualmode) manualmode = true;
@@ -471,7 +329,6 @@ void s1_iso_swap(void){
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); 
                 led1_state = true;
                 led2_state = false;
-                
 
         }
         else if (speedzoneflip == 1){
@@ -494,7 +351,6 @@ void s1_iso_swap(void){
         if(uwTick - start_time >= delay_ms){
         speedzoneflip = (speedzoneflip + 1) % 3;
         start_time = uwTick;
-        
 
         }
 
@@ -545,15 +401,14 @@ void s1_iso_swap(void){
                 
 
         }
-        
+        isoBlinked = true; 
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); 
 
         
         
     } else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
-        isoBlinked = true;  
-        modeselection = true;
+
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         
         if(modeflip == 0){
@@ -566,14 +421,6 @@ void s1_iso_swap(void){
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
                 HAL_Delay(100);
-
-             if (firstrun == false){
-            tx = 0b01111010;
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
         }
         else if (modeflip == 1){
             multiple_exposure_flag = false;
@@ -585,14 +432,6 @@ void s1_iso_swap(void){
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
                 HAL_Delay(100);
-                        
-            if (firstrun == false){
-            tx = 0b00011110;
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
                 
             }
          else if (modeflip == 2){
@@ -605,21 +444,12 @@ void s1_iso_swap(void){
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
                 HAL_Delay(100);
-            
-
-            if (firstrun == false){
-            tx = 0b00011100;
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
                 
         }
 
         if(uwTick - start_time >= delay_ms){
         modeflip = (modeflip + 1) % 3;
         start_time = uwTick;
-        firstrun = false;
 
             }
 
@@ -638,8 +468,9 @@ void s1_iso_swap(void){
                 savedISO = ISO_640;
                 break;
         }
-        save_iso(&newISO);
+        save_iso(newISO);
         ISOBlink(&savedISO);
+        isoBlinked = true;
         multiple_exposure_flag = false;
         selfy = false;
         tmode = false;  
@@ -655,66 +486,8 @@ void s1_iso_swap(void){
 
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-    // isoBlinked = true;         
-    modeselection = false;
+    isoBlinked = true;         
+  
        
 }
 
-
-void dongleless_display(int delay_ms){
-uint8_t tx = 0;
-
-     if (selfy){
-         tx = 0b00011110;
-            if (firstrun == false){
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
-            if(uwTick - global_start_time >= delay_ms){
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (2*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-            }    
-     } else if (multiple_exposure_flag && mexp_count < 1){ 
-            tx = 0b01111010;
-            if (firstrun == false){
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
-            if(uwTick - global_start_time >= delay_ms){
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (2*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-            }    
-    } else if (tmode){
-            tx = 0b00011100;
-                    if (firstrun == false){
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
-            if(uwTick - global_start_time >= delay_ms){
-            send_counter(0, 0, 0, 0);
-            if(uwTick - global_start_time >= (2*delay_ms)){
-            global_start_time = uwTick;
-            firstrun = false;
-            }
-            }    
-    } else{
-        if (firstrun == true){
-            send_counter(0, 0, 0, 0);
-            global_start_time = uwTick;
-            firstrun = false; 
-            }        
-    }
-
-}

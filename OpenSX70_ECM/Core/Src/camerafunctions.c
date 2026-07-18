@@ -1,4 +1,5 @@
 #include "camerafunctions.h"
+#include "peripheralport.h"
 
 volatile bool auto_timeout_flag = false;
 volatile bool tim16_timeout_flag = false;
@@ -258,6 +259,40 @@ void manual_exposure(struct shutter_speed_timing *timing){
     exposure_finish();
 }
 
+void manual_exposure_noflash(struct shutter_speed_timing timing){
+    HAL_Delay(Y_DELAY);
+    HAL_SuspendTick();
+
+    htim3.Init.Prescaler = timing.prescaler;
+    htim3.Init.Period = timing.period;
+
+    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    __HAL_TIM_SET_COUNTER(&htim3, 0);
+    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
+    tim3_timeout_flag = false;
+
+
+    shutter_open();
+    if(HAL_TIM_Base_Start_IT(&htim3) != HAL_OK) {
+        HAL_TIM_Base_Start_IT(&htim3);
+    }
+
+    while(!tim3_timeout_flag){
+        
+    }
+
+
+    if(HAL_TIM_Base_Stop_IT(&htim3) != HAL_OK) {
+        HAL_TIM_Base_Stop_IT(&htim3);
+    }
+
+    exposure_finish();
+}
+
 #if FUZZY_MANUAL_MODE
 void fuzzy_manual_exposure(struct fuzzy_shutter_speed_timing *timing, meter_iso *iso_setting){
 
@@ -355,6 +390,18 @@ void time_mode(){
     exposure_finish();
 }
 
+void time_mode_noflash(){
+    HAL_Delay(Y_DELAY);
+    HAL_GPIO_WritePin(FFA_POWER_EN_GPIO_Port, FFA_POWER_EN_Pin, 0);
+    shutter_open();
+    while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin));
+    while(!HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin));
+    //flash();
+    //HAL_Delay(Flash_Capture_Delay);
+    exposure_finish();
+}
+
+
 void exposure_finish(){
     HAL_ResumeTick();
     shutter_close();
@@ -366,6 +413,26 @@ void exposure_finish(){
     HAL_GPIO_WritePin(FFA_POWER_EN_GPIO_Port, FFA_POWER_EN_Pin, 1);
     while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin));
     if(multiple_exposure_flag){
+        
+
+        while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin)); //<--change semi colon to if going to multi mode with hold to eject
+/* CODE FOR TIEMR RELEASE OF MXP MODE IF TURN OFF COUNTER MODE
+                if(uwTick - start_time >= delay_ms){
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+                HAL_Delay(100);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+                HAL_Delay(100);
+                }
+        }
+            if(uwTick - start_time >= delay_ms){
+                multiple_exposure_flag = false;
+                mirror_down();
+                shutter_open();
+            }
+ */       
+        HAL_Delay(100);
         HAL_TIM_Base_Start_IT(&htim14);
         HAL_Delay(100);
         return;

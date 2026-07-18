@@ -7,6 +7,7 @@ struct meter_settings settings_polling;
 volatile bool poller_exposure_complete = false;
 volatile bool integration_started = false;
 volatile uint32_t tim3_overflow_count = 0;
+volatile bool modeselection = false;
 
 ADC_AnalogWDGConfTypeDef MeterWDGConfig;
 
@@ -67,7 +68,7 @@ void watchdog_config(uint32_t *threshold){
 void approximate_exposure_time(light_meter_helper lm_helper){
     //static uint32_t predicted_us; 
 
-    if(lm_helper == OFF){
+    if(lm_helper == OFF && !modeselection){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         return;
     }
@@ -89,7 +90,7 @@ void approximate_exposure_time(light_meter_helper lm_helper){
         integration_started = true;
         return;
     }
-    else{
+    else if (!modeselection){
         if(tim3_overflow_count >= METER_OVERFLOW_THRESHOLD){
             HAL_TIM_Base_Stop_IT(&htim3);
             HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);

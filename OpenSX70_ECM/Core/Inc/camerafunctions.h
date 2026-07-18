@@ -31,13 +31,16 @@ void begin_exposure(void);
 void auto_exposure(meter_iso *iso_setting);
 void auto_exposure_flashbar(meter_iso *iso_setting);
 void manual_exposure(struct shutter_speed_timing *timing);
+void manual_exposure_noflash(struct shutter_speed_timing timing);
 #if FUZZY_MANUAL_MODE
 void fuzzy_manual_exposure(struct fuzzy_shutter_speed_timing *timing, meter_iso *iso_setting);
 #endif
 void bulb_mode(void);
 void time_mode(void);
+void time_mode_noflash(void);
 void exposure_finish(void);
 void flash(void);
 void s2_ffa_mode(void);
 void s2_usart_mode(void);
+bool debounce_read(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState expected_state);
 #endif

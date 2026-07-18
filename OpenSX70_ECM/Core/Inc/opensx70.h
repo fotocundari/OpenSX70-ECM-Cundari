@@ -34,5 +34,5 @@ void ISOBlink(meter_iso *savedISO);
 void save_iso(meter_iso *iso);
 meter_iso read_iso(void);
 void s1_iso_swap(void);
-
+void dongleless_display(int delay_ms);
 #endif

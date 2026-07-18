@@ -7,7 +7,7 @@
 #define SHUTTERDARKSLIDE 0       //1 Enables feature to not eject dark slide until shutter button is pressed
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
-#define FUZZY_MANUAL_MODE 0
+#define FUZZY_MANUAL_MODE 1
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.
@@ -27,10 +27,10 @@
 //----------------END DONGLE SWITCH FEATURE SELECTION---------------------
 
 //---------------MAGIC NUMBERS---------------------------------------------
-#define A100 4093 //less than max value as watchdog requires exceeding value to trigger
-#define A600 1200
-#define FD100 2809
-#define FF100 3652
+#define A100 2000 //4093 normally less than max value as watchdog requires exceeding value to trigger
+#define A600 1500 // (1200 original - 1500 for my sonar)
+#define FD100 1167 //2809 normally
+#define FF100 1520 //3652 normally
 #define FD600 700
 #define FF600 910
 //---------------END MAGIC NUMBERS-----------------------------------------
