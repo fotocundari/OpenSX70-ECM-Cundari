@@ -448,21 +448,22 @@ meter_iso read_iso(void) {
 void s1_iso_swap(void){
     meter_iso currentISO = savedISO;
     int modeflip = 0;
-    int speedzoneflip = 0;
-    int speedflip = 0;
-    int flashspeed = 500;
-    bool led1_state = false;
-    bool led2_state = false;    
-     uint32_t start_time = uwTick;
+    uint32_t start_time = uwTick;
     const uint32_t delay_ms = 2000;
     firstrun = false;
     
   
-    
+ //Manual mode and speed selection   
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
-        modeselection = true;
     
+    #if DONGLELESS_MANUAL_SEEDS
+        int speedzoneflip = 0;
+        int speedflip = 0;
+        int flashspeed = 500;
+        bool led1_state = false;
+        bool led2_state = false;  
+        modeselection = true;
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
                 if (!manualmode) manualmode = true;
         if(speedzoneflip == 0){
@@ -548,8 +549,26 @@ void s1_iso_swap(void){
         
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); 
-
-        
+    #else
+        meter_iso newISO;
+        switch(currentISO){
+            case ISO_640:
+                newISO = ISO_125;
+                break;
+            case ISO_125:
+                newISO = ISO_640;
+                break;
+            default:
+                newISO = ISO_640;
+                savedISO = ISO_640;
+                break;
+        }
+        save_iso(&newISO);
+        ISOBlink(&savedISO);
+    
+        while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+        }        
+    #endif    
         
     } else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
@@ -623,7 +642,8 @@ void s1_iso_swap(void){
 
             }
 
-         if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
+        #if DONGLELESS_MANUAL_SEEDS    
+        if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         
         meter_iso newISO;
         switch(currentISO){
@@ -647,6 +667,8 @@ void s1_iso_swap(void){
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET);
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET);
         }
+        #endif
+
          
    }
 
