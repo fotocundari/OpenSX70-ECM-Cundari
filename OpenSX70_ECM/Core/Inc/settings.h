@@ -8,7 +8,7 @@
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
 #define FUZZY_MANUAL_MODE 0      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
-#define DONGLELESS_MANUAL_SEEDS 0   //1 Enables manual speeds without dongle. 0 disables manual speeds without dongle.
+#define DONGLELESS_MANUAL_SPEEDS 0   //1 Enables manual speeds without dongle. 0 disables manual speeds without dongle.
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.

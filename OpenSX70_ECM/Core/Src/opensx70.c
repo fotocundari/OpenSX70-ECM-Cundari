@@ -457,7 +457,7 @@ void s1_iso_swap(void){
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
     
-    #if DONGLELESS_MANUAL_SEEDS
+    #if DONGLELESS_MANUAL_SPEEDS
         int speedzoneflip = 0;
         int speedflip = 0;
         int flashspeed = 500;
@@ -642,7 +642,7 @@ void s1_iso_swap(void){
 
             }
 
-        #if DONGLELESS_MANUAL_SEEDS    
+        #if DONGLELESS_MANUAL_SPEEDS    
         if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         
         meter_iso newISO;
