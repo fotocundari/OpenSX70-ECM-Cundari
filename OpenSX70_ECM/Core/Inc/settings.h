@@ -8,6 +8,14 @@
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
 #define FUZZY_MANUAL_MODE 0      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
+
+// ------------------DONGLELESS FEATURES (SONAR ONLY)---------------------
+// Holding Sonar focus while closing the door will scroll through double exposure (purple), self timer (red), and t-mode (blue). Release on the mode you want
+// If counter communication is installed will display "d', "t", "L" for the mode 
+// if DONGLELESS_MANUAL_SPEEDS is enabled, holding the shutter button will scroll through manual speed zones (slow, medium, fast) and then holding a half press will scroll through the speeds in that zone. Release on the speed you want.
+// Speeds are aranged as follows: slow (1s, 1/2s, 1/4s, 1/8s), medium (1/15s, 1/30s, 1/60s, 1/125s), fast (1/250s, 1/500s, 1/1000s, 1/2000s).
+// if DONGLELESS_MANUAL_SPEEDS is enabled ISO swap is selected by half pushing the shutter (sonar focus) and then fully pushing the shutter down while its scrolling through the modes. LED will blink to indicate the ISO chosen (red SX70, blue 600). 
+
 #define DONGLELESS_MANUAL_SPEEDS 0   //1 Enables manual speeds without dongle. 0 disables manual speeds without dongle.
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
