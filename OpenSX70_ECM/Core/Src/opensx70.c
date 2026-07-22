@@ -79,14 +79,14 @@ void opensx70_run_state_machine (void){
 
      if (manualmenu) convert_speed_display(manualspeed);
 
-    if (empty){
+    if (empty & !manualmenu){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
         HAL_Delay(50);
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
         HAL_Delay(50);
-
+        
     }
 
    
@@ -112,7 +112,6 @@ camera_state do_state_init (void){
     initialize_peripheral_device(&current_dongle_state);
     HAL_Delay(50);
     send_counter(0, 1, 1, 0xCE);
-    send_counter(0,0,0,0);
     return STATE_DARKSLIDE;
 }
 

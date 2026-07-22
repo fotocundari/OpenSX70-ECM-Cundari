@@ -169,7 +169,7 @@ uint8_t disable = 0XAB;
     }
 
     if (response){
-    enable = 0x03;
+    enable = 3;
     pattern = memaddress; 
     }
 
