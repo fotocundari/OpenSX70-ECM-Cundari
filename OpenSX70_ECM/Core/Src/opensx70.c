@@ -7,6 +7,7 @@ bool multiple_exposure_first_run = true;
 bool selfy = false;
 bool tmode = false;
 bool manualmode = false;
+bool manualmenu = false;
 bool loopexit = false;
 bool firstrun = false;
 bool sendonce = true;
@@ -58,8 +59,25 @@ void opensx70_run_state_machine (void){
         modeselection = false;
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+        } else if (b == 0XFA) {
+        selfy = true;
+        } else if (b == 0xFB) {
+        multiple_exposure_flag = true;
+        } else if (b == 0xFC) {
+        tmode = true;
+        } else if (b >=1 && b <= 12) {
+            manualspeed = b - 1;
+            manualmode = true;
+            manualmenu = true;
+            isoBlinked = true;
+        } else if (b == 0xEE){
+            manualmenu = false;
+            isoBlinked = false;
         }
+
     }
+
+     if (manualmenu) convert_speed_display(manualspeed);
 
     if (empty){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
@@ -70,7 +88,11 @@ void opensx70_run_state_machine (void){
         HAL_Delay(50);
 
     }
+
+   
+
 }
+
 
 camera_state do_state_init (void){
     global_start_time = uwTick;
@@ -89,8 +111,8 @@ camera_state do_state_init (void){
     integrator_init(&savedISO);
     initialize_peripheral_device(&current_dongle_state);
     HAL_Delay(50);
-    send_counter(0, 1, 1, 0xCC);
-
+    send_counter(0, 1, 1, 0xCE);
+    send_counter(0,0,0,0);
     return STATE_DARKSLIDE;
 }
 
@@ -147,7 +169,10 @@ camera_state do_state_noDongle (void){
             
             if (manualmode){
                 manual_exposure_noflash(ShutterSpeedTiming[manualspeed]);
+                
+               #if !MANUAL_SPEED_LOCK 
                 manualmode = false;
+               #endif
             }
             else{
                 
@@ -576,26 +601,7 @@ void s1_iso_swap(void){
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         
         if(modeflip == 0){
-             multiple_exposure_flag = true;
-             selfy = false;
-             tmode = false;
-                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-                HAL_Delay(100);
-                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-                HAL_Delay(100);
-
-             if (firstrun == false){
-            tx = 0b01111010;
-            send_counter(tx, 1, 0, 0);
-            global_start_time = uwTick;
-            firstrun = true;
-            }
-
-        }
-        else if (modeflip == 1){
-            multiple_exposure_flag = false;
+         multiple_exposure_flag = false;
             selfy = true;
             tmode = false;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
@@ -606,13 +612,31 @@ void s1_iso_swap(void){
                 HAL_Delay(100);
                         
             if (firstrun == false){
-            tx = 0b00011110;
+            tx = 0b00011110; // "t"
+            send_counter(tx, 1, 0, 0);
+            global_start_time = uwTick;
+            firstrun = true;
+            }     
+
+        }
+        else if (modeflip == 1){
+            multiple_exposure_flag = true;
+             selfy = false;
+             tmode = false;
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+                HAL_Delay(100);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+                HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+                HAL_Delay(100);
+
+             if (firstrun == false){
+            tx = 0b01111010; // "d"
             send_counter(tx, 1, 0, 0);
             global_start_time = uwTick;
             firstrun = true;
             }
-
-                
+              
             }
          else if (modeflip == 2){
             multiple_exposure_flag = false;
@@ -627,7 +651,7 @@ void s1_iso_swap(void){
             
 
             if (firstrun == false){
-            tx = 0b00011100;
+            tx = 0b00011100; // "L"
             send_counter(tx, 1, 0, 0);
             global_start_time = uwTick;
             firstrun = true;
@@ -687,7 +711,7 @@ void dongleless_display(int delay_ms){
 uint8_t tx = 0;
 
      if (selfy){
-         tx = 0b00011110;
+         tx = 0b00011110; //"t"
             if (firstrun == false){
             send_counter(tx, 1, 0, 0);
             global_start_time = uwTick;
@@ -702,7 +726,7 @@ uint8_t tx = 0;
             }
             }    
      } else if (multiple_exposure_flag && mexp_count < 1){ 
-            tx = 0b01111010;
+            tx = 0b01111010; // "d"
             if (firstrun == false){
             send_counter(tx, 1, 0, 0);
             global_start_time = uwTick;
@@ -717,7 +741,22 @@ uint8_t tx = 0;
             }
             }    
     } else if (tmode){
-            tx = 0b00011100;
+            tx = 0b00011100; // "L"
+                    if (firstrun == false){
+            send_counter(tx, 1, 0, 0);
+            global_start_time = uwTick;
+            firstrun = true;
+            }
+
+            if(uwTick - global_start_time >= delay_ms){
+            send_counter(0, 0, 0, 0);
+            if(uwTick - global_start_time >= (2*delay_ms)){
+            global_start_time = uwTick;
+            firstrun = false;
+            }
+            }    
+    } else if (manualmode & !manualmenu){
+            tx = 0b00101010; // "n"
                     if (firstrun == false){
             send_counter(tx, 1, 0, 0);
             global_start_time = uwTick;
@@ -740,3 +779,103 @@ uint8_t tx = 0;
     }
 
 }
+
+void convert_speed_display(int speed){
+uint8_t tx = 0;
+uint8_t tx2 = 0;
+uint8_t tx3 = 9;
+int delay_ms = 175;
+
+    switch (speed){
+        case 0:
+        tx = 2;
+        tx2 = 0b00101110;
+            break;
+        case 1:
+        tx = 1;
+        tx2 = 0b00101110;
+            break;
+        case 2:
+        tx = 5;
+        tx2 = 0;
+        tx3 = 0;
+            break;
+        case 3:
+        tx = 2;
+        tx2 = 5;
+        tx3 = 0;
+            break;
+        case 4:
+        tx = 1;
+        tx2 = 2;
+        tx3 = 5;
+            break;
+        case 5:
+        tx = 6;
+        tx2 = 0;
+            break;
+        case 6:
+        tx = 3;
+        tx2 = 0;
+            break;
+        case 7:
+        tx = 1;
+        tx2 = 5;
+            break;
+        case 8:
+        tx = 8;
+            break;
+        case 9:
+        tx = 4;
+            break;
+        case 10:
+        tx = 2;
+            break;
+        case 11:
+        tx = 1;
+            break;
+ 
+    }
+  
+        send_counter(tx, 1, 0, 0);
+        HAL_Delay(delay_ms);
+
+        if (speed > 10){
+        HAL_Delay(delay_ms*2);  
+        send_counter(0xDD, 1, 0, 0);
+        HAL_Delay(delay_ms*3);     
+        }
+
+        if (speed < 11 && speed > 7){  
+        HAL_Delay(delay_ms); 
+            send_counter(0xF, 1, 0 , 0);
+        HAL_Delay(delay_ms);     
+        }
+        
+        if (speed < 8 || speed < 2){
+                if (tx2 == tx3) {
+                send_counter(0xF, 1, 0 , 0);
+                HAL_Delay(delay_ms/2);    
+                }
+        send_counter(tx2, 1, 0, 0);
+        HAL_Delay(delay_ms);
+        
+
+                if (speed < 5 && speed > 1){  
+                if (tx2 == tx3) {
+                send_counter(0xF, 1, 0 , 0);
+                HAL_Delay(delay_ms/2);    
+                }
+                send_counter(tx3, 1, 0, 0);
+                HAL_Delay(delay_ms);
+                }
+
+    
+        send_counter(0xF, 1, 0 , 0);
+        HAL_Delay(delay_ms*3);
+             }
+        
+        send_counter(0, 0, 0, 0);       
+
+
+} 

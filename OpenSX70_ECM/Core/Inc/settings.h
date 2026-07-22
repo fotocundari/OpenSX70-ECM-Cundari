@@ -16,7 +16,10 @@
 // Speeds are aranged as follows: slow (1s, 1/2s, 1/4s, 1/8s), medium (1/15s, 1/30s, 1/60s, 1/125s), fast (1/250s, 1/500s, 1/1000s, 1/2000s).
 // if DONGLELESS_MANUAL_SPEEDS is enabled ISO swap is selected by half pushing the shutter (sonar focus) and then fully pushing the shutter down while its scrolling through the modes. LED will blink to indicate the ISO chosen (red SX70, blue 600). 
 
-#define DONGLELESS_MANUAL_SPEEDS 0   //1 Enables manual speeds without dongle. 0 disables manual speeds without dongle.
+#define DONGLELESS_MANUAL_SPEEDS 0   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
+#define MANUAL_SPEED_LOCK 1 // 1 enables the lock, where setting a manual speed donglelessly will stay set until power cylce/door opens. 0 disables and manual speed will only execute once 
+
+
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.

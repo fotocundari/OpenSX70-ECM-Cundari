@@ -153,11 +153,17 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 void send_counter(uint8_t tx, bool display_control_enable, bool response, uint8_t memaddress){ // if display_control_enable is true the OPEN ECM will take control of the display, if false the counter will continue to control where left off.
 HAL_HalfDuplex_EnableTransmitter(&huart1);
 uint8_t pattern = 0;
-uint8_t enable = 0xFF;
-uint8_t disable = 0X01; 
+uint8_t enable = 0xAF;
+uint8_t disable = 0XAB; 
 
     if (0 <= tx && tx <= 9) {
     pattern = convertNumberToPattern(tx);  
+    } else if (tx == 0xF){
+    pattern = 0x00;
+
+    } else if (tx == 0xDD){
+
+    pattern = 2;
     } else{
     pattern = tx;     
     }
@@ -199,7 +205,7 @@ uint8_t convertNumberToPattern (uint8_t number) {
         case 7: return 0b11100000;
         case 8: return 0b11111110;
         case 9: return 0b11100110;
-        default: return 0b11111100;
+        default: return 0b00000000;
     }
     
 }
