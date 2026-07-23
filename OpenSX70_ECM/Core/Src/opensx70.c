@@ -3,6 +3,8 @@
 meter_iso savedISO;
 
 volatile bool isoBlinked = false;
+volatile int last_time = 0; 
+int delay_ms = 50;
 bool multiple_exposure_first_run = true;
 bool selfy = false;
 bool tmode = false;
@@ -12,12 +14,9 @@ bool loopexit = false;
 bool firstrun = false;
 bool sendonce = true;
 bool empty = false;
-
-
 int manualspeed = 0; 
 int speedselect = 0;
 int mexp_count = 0;
-
 uint8_t off = 0xFF;
 uint8_t on = 0X01; 
 uint8_t tx = 0x0;
@@ -68,25 +67,23 @@ void opensx70_run_state_machine (void){
         } else if (b >=1 && b <= 12) {
             manualspeed = b - 1;
             manualmode = true;
-            manualmenu = true;
             isoBlinked = true;
-        } else if (b == 0xEE){
-            manualmenu = false;
-            isoBlinked = false;
-        }
+        } 
 
     }
 
-     if (manualmenu) convert_speed_display(manualspeed);
 
-    if (empty & !manualmenu){
+    if (empty){
+               if ((HAL_GetTick() - last_time) >= delay_ms){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-        HAL_Delay(50);
+        }
+
+        if ((HAL_GetTick() - last_time) >= delay_ms*2){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        HAL_Delay(50);
-        
+        last_time = HAL_GetTick();
+        }       
     }
 
    
@@ -112,6 +109,8 @@ camera_state do_state_init (void){
     initialize_peripheral_device(&current_dongle_state);
     HAL_Delay(50);
     send_counter(0, 1, 1, 0xCE);
+    HAL_Delay(10);
+    send_counter(0, 0, 0, 0);
     return STATE_DARKSLIDE;
 }
 
@@ -481,7 +480,7 @@ void s1_iso_swap(void){
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
     
-    #if DONGLELESS_MANUAL_SPEEDS
+    #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON
         int speedzoneflip = 0;
         int speedflip = 0;
         int flashspeed = 500;
@@ -665,7 +664,7 @@ void s1_iso_swap(void){
 
             }
 
-        #if DONGLELESS_MANUAL_SPEEDS    
+        #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON   
         if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         
         meter_iso newISO;
@@ -778,103 +777,3 @@ uint8_t tx = 0;
     }
 
 }
-
-void convert_speed_display(int speed){
-uint8_t tx = 0;
-uint8_t tx2 = 0;
-uint8_t tx3 = 9;
-int delay_ms = 175;
-
-    switch (speed){
-        case 0:
-        tx = 2;
-        tx2 = 0b00101110;
-            break;
-        case 1:
-        tx = 1;
-        tx2 = 0b00101110;
-            break;
-        case 2:
-        tx = 5;
-        tx2 = 0;
-        tx3 = 0;
-            break;
-        case 3:
-        tx = 2;
-        tx2 = 5;
-        tx3 = 0;
-            break;
-        case 4:
-        tx = 1;
-        tx2 = 2;
-        tx3 = 5;
-            break;
-        case 5:
-        tx = 6;
-        tx2 = 0;
-            break;
-        case 6:
-        tx = 3;
-        tx2 = 0;
-            break;
-        case 7:
-        tx = 1;
-        tx2 = 5;
-            break;
-        case 8:
-        tx = 8;
-            break;
-        case 9:
-        tx = 4;
-            break;
-        case 10:
-        tx = 2;
-            break;
-        case 11:
-        tx = 1;
-            break;
- 
-    }
-  
-        send_counter(tx, 1, 0, 0);
-        HAL_Delay(delay_ms);
-
-        if (speed > 10){
-        HAL_Delay(delay_ms*2);  
-        send_counter(0xDD, 1, 0, 0);
-        HAL_Delay(delay_ms*3);     
-        }
-
-        if (speed < 11 && speed > 7){  
-        HAL_Delay(delay_ms); 
-            send_counter(0xF, 1, 0 , 0);
-        HAL_Delay(delay_ms);     
-        }
-        
-        if (speed < 8 || speed < 2){
-                if (tx2 == tx3) {
-                send_counter(0xF, 1, 0 , 0);
-                HAL_Delay(delay_ms/2);    
-                }
-        send_counter(tx2, 1, 0, 0);
-        HAL_Delay(delay_ms);
-        
-
-                if (speed < 5 && speed > 1){  
-                if (tx2 == tx3) {
-                send_counter(0xF, 1, 0 , 0);
-                HAL_Delay(delay_ms/2);    
-                }
-                send_counter(tx3, 1, 0, 0);
-                HAL_Delay(delay_ms);
-                }
-
-    
-        send_counter(0xF, 1, 0 , 0);
-        HAL_Delay(delay_ms*3);
-             }
-        
-        send_counter(0, 0, 0, 0);       
-
-
-} 

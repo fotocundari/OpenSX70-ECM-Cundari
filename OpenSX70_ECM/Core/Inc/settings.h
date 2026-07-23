@@ -2,24 +2,22 @@
 #define SETTINGS_H
 #include "main.h"
 
-
 //      Feature toggles
 #define SHUTTERDARKSLIDE 0       //1 Enables feature to not eject dark slide until shutter button is pressed
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
 #define FUZZY_MANUAL_MODE 0      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
 
-// ------------------DONGLELESS FEATURES (SONAR ONLY)---------------------
-// Holding Sonar focus while closing the door will scroll through double exposure (purple), self timer (red), and t-mode (blue). Release on the mode you want
-// If counter communication is installed will display "d', "t", "L" for the mode 
-// if DONGLELESS_MANUAL_SPEEDS is enabled, holding the shutter button will scroll through manual speed zones (slow, medium, fast) and then holding a half press will scroll through the speeds in that zone. Release on the speed you want.
-// Speeds are aranged as follows: slow (1s, 1/2s, 1/4s, 1/8s), medium (1/15s, 1/30s, 1/60s, 1/125s), fast (1/250s, 1/500s, 1/1000s, 1/2000s).
-// if DONGLELESS_MANUAL_SPEEDS is enabled ISO swap is selected by half pushing the shutter (sonar focus) and then fully pushing the shutter down while its scrolling through the modes. LED will blink to indicate the ISO chosen (red SX70, blue 600). 
-
-#define DONGLELESS_MANUAL_SPEEDS 0   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
-#define MANUAL_SPEED_LOCK 1 // 1 enables the lock, where setting a manual speed donglelessly will stay set until power cylce/door opens. 0 disables and manual speed will only execute once 
-
-
+// ------------------DONGLELESS FEATURES ---------------------
+// If you have a Sonar you can select modes using the shutter button.
+// Holding Sonar focus while closing the door will scroll through self timer (purple), double (red), and t-mode (blue). Release on the mode you want
+// If counter communicater is installed will display "d', "t", "L" for the mode on the display
+// if DONGLELESS_MANUAL_SPEEDS is enabled, fully holding the shutter button down will scroll through manual speed zones (slow, medium, fast) and then switching to holding a half press will scroll through the speeds in that zone. Release on the speed you want.
+// Speeds are aranged as follows: slow (1s, 1/2s, 1/4s, 1/8s), medium (1/15s, 1/30s, 1/60s, 1/125s), fast (1/250s, 1/500s, 1/1000s, 1/2000s). The blink rate will change for each speed within a zone.
+// ISO swap is then selected by half pushing the shutter (sonar focus) and then fully pushing the shutter down while its scrolling through the modes. LED will blink to indicate the ISO chosen (red SX70, blue 600).
+// if DONGLELESS_MANUAL_SPEEDS is disabled, ISO Swap works as normal, you will only have access to the 3 modes (self timer (t), double (d), and t-mode (L) unless you have a counter commincator installed using the counter menu 
+#define DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON 0   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
+#define MANUAL_SPEED_LOCK 1 // 1 enables the lock where when setting a manual speed donglelessly that speed will stay set until power cylce/door opens. 0 disables the lock and manual speed will only execute once then go back to auto
 
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.
