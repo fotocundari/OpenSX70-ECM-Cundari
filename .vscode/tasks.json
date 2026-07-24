@@ -2,19 +2,19 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "shell",
-			"label": "CMake: Configure Debug",
-			"command": "cmake",
-			"args": [
-				"--preset",
-				"Debug"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}/OpenSX70_ECM"
-			},
-			"problemMatcher": [],
-			"detail": "Configure CMake project"
-		},
+            "label": "Build Release & Flash",
+            "type": "shell",
+			"dependsOn": "CMake: build",
+            "command": "/Program Files/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin/STM32_Programmer_CLI.exe",
+            "args": [
+                "-c", "port=SWD", "mode=UR",
+                "-d", "${workspaceFolder}/OpenSX70_ECM/build/Release/OpenSX70_ECM.elf",
+                "-v",
+                "-rst"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
 		{
 			"type": "shell",
 			"label": "CMake: Build Debug",
@@ -38,20 +38,6 @@
 			"dependsOn": [
 				"CMake: Configure Debug"
 			]
-		},
-		{
-			"type": "shell",
-			"label": "CMake: Configure Release",
-			"command": "cmake",
-			"args": [
-				"--preset",
-				"Release"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}/OpenSX70_ECM"
-			},
-			"problemMatcher": [],
-			"detail": "Configure CMake project for Release"
 		},
 		{
 			"type": "shell",
