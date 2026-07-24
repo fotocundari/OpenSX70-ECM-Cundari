@@ -13,7 +13,8 @@
                 "-rst"
             ],
             "group": "build",
-            "problemMatcher": []
+            "problemMatcher": [],
+			"detail": "Build project in Release mode and Flash to STM32"
         },
 		{
 			"type": "shell",
