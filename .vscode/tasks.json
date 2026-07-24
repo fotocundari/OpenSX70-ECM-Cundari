@@ -17,6 +17,20 @@
         },
 		{
 			"type": "shell",
+			"label": "CMake: Configure Debug",
+			"command": "cmake",
+			"args": [
+				"--preset",
+				"Debug"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/OpenSX70_ECM"
+			},
+			"problemMatcher": [],
+			"detail": "Configure CMake project"
+		},
+		{
+			"type": "shell",
 			"label": "CMake: Build Debug",
 			"command": "cmake",
 			"args": [
@@ -38,6 +52,20 @@
 			"dependsOn": [
 				"CMake: Configure Debug"
 			]
+		},
+		{
+			"type": "shell",
+			"label": "CMake: Configure Release",
+			"command": "cmake",
+			"args": [
+				"--preset",
+				"Release"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/OpenSX70_ECM"
+			},
+			"problemMatcher": [],
+			"detail": "Configure CMake project for Release"
 		},
 		{
 			"type": "shell",
