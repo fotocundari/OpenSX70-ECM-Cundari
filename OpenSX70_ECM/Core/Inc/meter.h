@@ -10,7 +10,7 @@ extern TIM_HandleTypeDef htim3;
 extern volatile bool poller_exposure_complete;
 extern volatile bool integration_started;
 extern volatile uint32_t tim3_overflow_count;
-extern volatile bool modeselection;
+
 
 typedef enum {
     ISO_640,

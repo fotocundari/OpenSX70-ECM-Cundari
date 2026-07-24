@@ -1,6 +1,8 @@
 #include "peripheralport.h"
+#include "opensx70.h"
 
 peripheral_device current_dongle_state;
+counter_device current_counter_state;
 uint8_t peripheral_uart_buffer[1];
 uint8_t counter_uart_buffer[1];
 volatile bool dongle_response_received = false;
@@ -32,6 +34,16 @@ void initialize_peripheral_device(peripheral_device *device){
     device->switch1 = false;
     device->switch2 = false;
     device->type = PERIPHERAL_NONE;
+}
+
+void initialize_counter_device(counter_device *device)
+{
+    device->empty = false;
+    device->modeSelection = false;
+    device->selfTimer = false;
+    device->tMode = false;
+    device->manualMode = false;
+    device->manualSpeed = 0;
 }
 
 peripheral_state do_dongle_state_noDongle(peripheral_device *device){
@@ -149,6 +161,58 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
         counter_response_received = true;
     }
 }
+
+void update_counter(counter_device *device)
+{
+    if (!counter_response_received)
+    {
+        return;
+    }
+
+    counter_response_received = false;
+
+    uint8_t b = counter_uart_buffer[0];
+
+    HAL_UART_Receive_IT(&huart1, counter_uart_buffer, 1);
+
+    switch (b)
+    {
+        case 0xFE:
+            device->empty = true;
+            device->modeSelection = true;
+            break;
+
+        case 0xFF:
+            device->empty = false;
+            device->modeSelection = false;
+
+            HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+            break;
+
+        case 0xFA:
+            device->selfTimer = true;
+            break;
+
+        case 0xFB:
+            multiple_exposure_flag = true;
+            break;
+
+        case 0xFC:
+            device->tMode = true;
+            break;
+
+        default:
+            if (b >= 1 && b <= 12)
+            {
+                device->manualSpeed = b - 1;
+                device->manualMode = true;
+                isoBlinked = true;
+            }
+            break;
+    }
+}
+
 
 void send_counter(uint8_t tx, bool display_control_enable, bool response, uint8_t memaddress){ // if display_control_enable is true the OPEN ECM will take control of the display, if false the counter will continue to control where left off.
 HAL_HalfDuplex_EnableTransmitter(&huart1);
