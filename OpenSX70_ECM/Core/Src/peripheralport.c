@@ -1,5 +1,4 @@
 #include "peripheralport.h"
-#include "counter.h"
 #include "opensx70.h"
 
 peripheral_device current_dongle_state;

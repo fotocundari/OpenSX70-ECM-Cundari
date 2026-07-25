@@ -2,10 +2,10 @@
 #define COUNTER_H
 
 #include "settings.h"
+#include "opensx70.h"
 
 typedef struct counter_device {
     bool empty;
-    bool modeSelection;
     bool selfTimer;
     bool tMode;
     bool manualMode;

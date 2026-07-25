@@ -3,6 +3,7 @@
 meter_iso savedISO;
 
 volatile bool isoBlinked = false;
+volatile bool modeSelection = true; //tells the poller to stop polling the light meter helper (when trying to use the LED for selecting modes etc)
 bool multiple_exposure_first_run = true;
 bool loopexit = false;
 bool firstrun = false;
@@ -55,7 +56,7 @@ camera_state do_state_init (void){
     s1_iso_swap();
     integrator_init(&savedISO);
     HAL_Delay(50);
-    send_counter(0, 1, 1, 0xCE); //check the counter's memory to see if its count is 0 (empty).
+    send_counter(0, 1, 1, 0xCE); //check the counter's memory to see if its empty or at 0
     HAL_Delay(10);
     send_counter(0, 0, 0, 0); //release the counter from opensx70s control (if opens70 reset while it was under control)
     return STATE_DARKSLIDE;
@@ -433,7 +434,7 @@ void s1_iso_swap(void){
         int flashspeed = 500;
         bool led1_state = false;
         bool led2_state = false;  
-        current_counter_state.modeSelection = true;
+        modeSelection = true;
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
                 if (!current_counter_state.manualMode) current_counter_state.manualMode = true;
         if(speedzoneflip == 0){
@@ -542,7 +543,7 @@ void s1_iso_swap(void){
         
     } else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
-        current_counter_state.modeSelection = true;
+        modeSelection = true;
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         
         if(modeflip == 0){
@@ -647,7 +648,7 @@ void s1_iso_swap(void){
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
     // isoBlinked = true;         
-    current_counter_state.modeSelection = false;
+    modeSelection = false;
        
 }
 

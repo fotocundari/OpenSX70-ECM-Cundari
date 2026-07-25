@@ -1,6 +1,5 @@
 #include "meter.h"
 #include "peripheralport.h"
-#include "counter.h"
 
 struct meter_settings *current_settings;
 struct meter_settings settings_640;
@@ -70,7 +69,7 @@ void watchdog_config(uint32_t *threshold){
 void approximate_exposure_time(light_meter_helper lm_helper){
     //static uint32_t predicted_us; 
 
-    if(lm_helper == OFF && !current_counter_state.modeSelection){
+    if(lm_helper == OFF){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         return;
     }
@@ -92,7 +91,7 @@ void approximate_exposure_time(light_meter_helper lm_helper){
         integration_started = true;
         return;
     }
-    else if (!current_counter_state.modeSelection){
+    else {
         if(tim3_overflow_count >= METER_OVERFLOW_THRESHOLD){
             HAL_TIM_Base_Stop_IT(&htim3);
             HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);

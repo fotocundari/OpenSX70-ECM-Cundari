@@ -7,8 +7,10 @@
 #include "pollers.h"
 #include "counter.h"
 
+
 extern ADC_HandleTypeDef hadc1;
 extern volatile bool isoBlinked;
+extern volatile bool modeSelection;
 
 
 typedef enum{

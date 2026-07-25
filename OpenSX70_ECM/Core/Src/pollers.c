@@ -39,7 +39,7 @@ poller_state do_state_poll_dongle(){
 }
 
 poller_state do_state_poll_meter(){
-    if(!LIGHMETER_HELPER && !current_counter_state.modeSelection){
+    if(!LIGHMETER_HELPER || modeSelection){
         return STATE_POLL_DONGLE;
     }
     switch(current_dongle_state.type){

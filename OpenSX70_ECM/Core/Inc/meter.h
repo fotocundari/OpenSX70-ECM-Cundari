@@ -11,7 +11,6 @@ extern volatile bool poller_exposure_complete;
 extern volatile bool integration_started;
 extern volatile uint32_t tim3_overflow_count;
 
-
 typedef enum {
     ISO_640,
     ISO_125
