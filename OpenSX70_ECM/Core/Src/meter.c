@@ -1,5 +1,6 @@
 #include "meter.h"
 #include "peripheralport.h"
+#include "counter.h"
 
 struct meter_settings *current_settings;
 struct meter_settings settings_640;

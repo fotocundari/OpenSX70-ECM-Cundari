@@ -3,19 +3,16 @@
 meter_iso savedISO;
 
 volatile bool isoBlinked = false;
-volatile int last_time = 0; 
-int delay_ms = 50;
 bool multiple_exposure_first_run = true;
 bool loopexit = false;
 bool firstrun = false;
 bool sendonce = true;
 
 int mexp_count = 0;
-uint8_t off = 0xFF;
-uint8_t on = 0X01; 
-uint8_t tx = 0x0;
+int delay_ms = 50;
+
+uint8_t tx = 0x0; //byte to send to counter
 uint32_t global_start_time = 0;
-uint8_t b = 0;
 
 typedef camera_state (*camera_state_funct)(void);
 
@@ -39,22 +36,6 @@ camera_state state = STATE_INIT;
 void opensx70_run_state_machine (void){
     state = STATE_MACHINE[state]();
     sonar_focus();
-    update_counter(&current_counter_state);
-
-        //flashes LED on empty without causing delay.
-        if (current_counter_state.empty){
-        if ((HAL_GetTick() - last_time) >= delay_ms){
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-        }
-
-        if ((HAL_GetTick() - last_time) >= delay_ms*2){
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        last_time = HAL_GetTick();
-        }       
-    }
-
 }
 
 camera_state do_state_init (void){
@@ -73,11 +54,10 @@ camera_state do_state_init (void){
     }
     s1_iso_swap();
     integrator_init(&savedISO);
-    initialize_peripheral_device(&current_dongle_state);
     HAL_Delay(50);
-    send_counter(0, 1, 1, 0xCE);
+    send_counter(0, 1, 1, 0xCE); //check the counter's memory to see if its count is 0 (empty).
     HAL_Delay(10);
-    send_counter(0, 0, 0, 0);
+    send_counter(0, 0, 0, 0); //release the counter from opensx70s control (if opens70 reset while it was under control)
     return STATE_DARKSLIDE;
 }
 

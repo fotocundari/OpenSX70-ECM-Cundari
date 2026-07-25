@@ -46,34 +46,17 @@ typedef struct peripheral_device {
     bool switch2;
 } peripheral_device;
 
-typedef struct counter_device {
-    bool empty;
-    bool modeSelection;
-    bool selfTimer;
-    bool tMode;
-    bool manualMode;
-    uint8_t manualSpeed;
-    } counter_device;
-
-void initialize_counter_device(counter_device *device);
-void update_counter(counter_device *device);
-
 void initialize_peripheral_device(peripheral_device *device);
 void set_peripheral_device(peripheral_device *device, uint8_t selector, bool switch1, bool switch2, peripheral_type type);
 void update_peripheral_status(peripheral_device *device);
 void send_command(uint8_t command);
-void send_counter(uint8_t tx, bool display_control_enable, bool response, uint8_t memaddress);
-uint8_t convertNumberToPattern(uint8_t number);
 bool get_dongle_settings(peripheral_device *device);
 bool get_switch_state(uint8_t switch_number);
 
 extern peripheral_device current_dongle_state;
-extern counter_device current_counter_state;
 extern volatile bool dongle_response_received;
-extern volatile bool counter_response_received;
 extern volatile bool waiting_for_ping_response;
 extern uint8_t peripheral_uart_buffer[1];
-extern uint8_t counter_uart_buffer[1];
 extern UART_HandleTypeDef huart2;
 
 #endif
