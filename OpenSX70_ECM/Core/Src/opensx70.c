@@ -3,25 +3,17 @@
 meter_iso savedISO;
 
 volatile bool isoBlinked = false;
-volatile int last_time = 0; 
-int delay_ms = 50;
+volatile bool modeSelection = true; //tells the poller to stop polling the light meter helper (when trying to use the LED for selecting modes etc)
 bool multiple_exposure_first_run = true;
-bool selfy = false;
-bool tmode = false;
-bool manualmode = false;
-bool manualmenu = false;
 bool loopexit = false;
 bool firstrun = false;
 bool sendonce = true;
-bool empty = false;
-int manualspeed = 0; 
-int speedselect = 0;
+
 int mexp_count = 0;
-uint8_t off = 0xFF;
-uint8_t on = 0X01; 
-uint8_t tx = 0x0;
+int delay_ms = 50;
+
+uint8_t tx = 0x0; //byte to send to counter
 uint32_t global_start_time = 0;
-uint8_t b = 0;
 
 typedef camera_state (*camera_state_funct)(void);
 
@@ -45,57 +37,14 @@ camera_state state = STATE_INIT;
 void opensx70_run_state_machine (void){
     state = STATE_MACHINE[state]();
     sonar_focus();
-    
-    if (counter_response_received) {
-    counter_response_received = false;
-    b = counter_uart_buffer[0];
-    HAL_UART_Receive_IT(&huart1, counter_uart_buffer, 1);
-    if (b == 0xFE){
-        empty = true;
-        modeselection = true;
-        } else if (b == 0xFF) {
-        empty = false;
-        modeselection = false;
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        } else if (b == 0XFA) {
-        selfy = true;
-        } else if (b == 0xFB) {
-        multiple_exposure_flag = true;
-        } else if (b == 0xFC) {
-        tmode = true;
-        } else if (b >=1 && b <= 12) {
-            manualspeed = b - 1;
-            manualmode = true;
-            isoBlinked = true;
-        } 
-
-    }
-
-
-    if (empty){
-               if ((HAL_GetTick() - last_time) >= delay_ms){
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-        }
-
-        if ((HAL_GetTick() - last_time) >= delay_ms*2){
-        HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-        HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-        last_time = HAL_GetTick();
-        }       
-    }
-
-   
-
 }
-
 
 camera_state do_state_init (void){
     global_start_time = uwTick;
     savedISO = read_iso();
     solenoid_init();
     initialize_peripheral_device(&current_dongle_state);
+    initialize_counter_device(&current_counter_state);
     HAL_TIM_Base_Start_IT(&htim14);
     __HAL_ADC_DISABLE_IT(&hadc1, ADC_IT_AWD1);
     HAL_GPIO_WritePin(LM_RESET_GPIO_Port, LM_RESET_Pin, 1);
@@ -106,11 +55,10 @@ camera_state do_state_init (void){
     }
     s1_iso_swap();
     integrator_init(&savedISO);
-    initialize_peripheral_device(&current_dongle_state);
     HAL_Delay(50);
-    send_counter(0, 1, 1, 0xCE);
+    send_counter(0, 1, 1, 0xCE); //check the counter's memory to see if its empty or at 0
     HAL_Delay(10);
-    send_counter(0, 0, 0, 0);
+    send_counter(0, 0, 0, 0); //release the counter from opensx70s control (if opens70 reset while it was under control)
     return STATE_DARKSLIDE;
 }
 
@@ -152,24 +100,24 @@ camera_state do_state_noDongle (void){
         }
             
 
-        if(selfy){
+        if(current_counter_state.selfTimer){
             self_timer();
-            selfy = false;
+            current_counter_state.selfTimer = false;
         }
 
         begin_exposure();
         sendonce = true;
-        if (tmode){
+        if (current_counter_state.tMode){
             time_mode_noflash();
-            tmode = false;
+            current_counter_state.tMode = false;
         } else {
         
             
-            if (manualmode){
-                manual_exposure_noflash(ShutterSpeedTiming[manualspeed]);
+            if (current_counter_state.manualMode){
+                manual_exposure_noflash(ShutterSpeedTiming[current_counter_state.manualSpeed]);
                 
                #if !MANUAL_SPEED_LOCK 
-                manualmode = false;
+                current_counter_state.manualMode = false;
                #endif
             }
             else{
@@ -199,20 +147,20 @@ camera_state do_state_flashBar (void){
         }
           
        
-        if(selfy){
+        if(current_counter_state.selfTimer){
             self_timer();
-            selfy = false;
+            current_counter_state.selfTimer = false;
         }
 
         begin_exposure();
-        if (tmode){
+        if (current_counter_state.tMode){
             time_mode();
-            tmode = false;
+            current_counter_state.tMode = false;
         } else {
 
-            if (manualmode){
-                manual_exposure(&ShutterSpeedTiming[manualspeed]);
-                manualmode = false;
+            if (current_counter_state.manualMode){
+                manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
+                current_counter_state.manualMode = false;
             }
             else{
                 auto_exposure_flashbar(&savedISO);
@@ -486,11 +434,11 @@ void s1_iso_swap(void){
         int flashspeed = 500;
         bool led1_state = false;
         bool led2_state = false;  
-        modeselection = true;
+        modeSelection = true;
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
-                if (!manualmode) manualmode = true;
+                if (!current_counter_state.manualMode) current_counter_state.manualMode = true;
         if(speedzoneflip == 0){
-                manualspeed = 11;
+                current_counter_state.manualSpeed = 11;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); 
                 led1_state = true;
@@ -499,7 +447,7 @@ void s1_iso_swap(void){
 
         }
         else if (speedzoneflip == 1){
-                manualspeed = 7;
+                current_counter_state.manualSpeed = 7;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET); 
                 led1_state = false;
@@ -507,7 +455,7 @@ void s1_iso_swap(void){
      
             }
          else if (speedzoneflip == 2){
-                manualspeed = 3;
+                current_counter_state.manualSpeed = 3;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
                 led1_state = true;
@@ -538,19 +486,19 @@ void s1_iso_swap(void){
             switch (speedflip) {
             case 0:
                 flashspeed = 500;
-                manualspeed = manualspeed + 3;
+                current_counter_state.manualSpeed = current_counter_state.manualSpeed + 3;
                 break;
             case 1:
                 flashspeed = 200;
-                manualspeed--;
+                current_counter_state.manualSpeed--;
                 break;
             case 2:
                 flashspeed = 100;
-                manualspeed--;
+                current_counter_state.manualSpeed--;
                 break;
             case 3:
                 flashspeed = 50;
-                manualspeed--;
+                current_counter_state.manualSpeed--;
                 break;
         }
         
@@ -595,13 +543,13 @@ void s1_iso_swap(void){
         
     } else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
-        modeselection = true;
+        modeSelection = true;
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         
         if(modeflip == 0){
          multiple_exposure_flag = false;
-            selfy = true;
-            tmode = false;
+            current_counter_state.selfTimer = true;
+            current_counter_state.tMode = false;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
                 HAL_Delay(100);
@@ -619,8 +567,8 @@ void s1_iso_swap(void){
         }
         else if (modeflip == 1){
             multiple_exposure_flag = true;
-             selfy = false;
-             tmode = false;
+             current_counter_state.selfTimer = false;
+             current_counter_state.tMode = false;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
                 HAL_Delay(100);
@@ -638,8 +586,8 @@ void s1_iso_swap(void){
             }
          else if (modeflip == 2){
             multiple_exposure_flag = false;
-            selfy = false;
-            tmode = true;
+            current_counter_state.selfTimer = false;
+            current_counter_state.tMode = true;
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
                 HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
                 HAL_Delay(100);
@@ -683,8 +631,8 @@ void s1_iso_swap(void){
         save_iso(&newISO);
         ISOBlink(&savedISO);
         multiple_exposure_flag = false;
-        selfy = false;
-        tmode = false;  
+        current_counter_state.selfTimer = false;
+        current_counter_state.tMode = false;  
         loopexit = true;
         while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET);
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET);
@@ -700,7 +648,7 @@ void s1_iso_swap(void){
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
     // isoBlinked = true;         
-    modeselection = false;
+    modeSelection = false;
        
 }
 
@@ -708,7 +656,7 @@ void s1_iso_swap(void){
 void dongleless_display(int delay_ms){
 uint8_t tx = 0;
 
-     if (selfy){
+     if (current_counter_state.selfTimer){
          tx = 0b00011110; //"t"
             if (firstrun == false){
             send_counter(tx, 1, 0, 0);
@@ -738,7 +686,7 @@ uint8_t tx = 0;
             firstrun = false;
             }
             }    
-    } else if (tmode){
+    } else if (current_counter_state.tMode){
             tx = 0b00011100; // "L"
                     if (firstrun == false){
             send_counter(tx, 1, 0, 0);
@@ -753,7 +701,7 @@ uint8_t tx = 0;
             firstrun = false;
             }
             }    
-    } else if (manualmode & !manualmenu){
+    } else if (current_counter_state.manualMode){
             tx = 0b00101010; // "n"
                     if (firstrun == false){
             send_counter(tx, 1, 0, 0);
