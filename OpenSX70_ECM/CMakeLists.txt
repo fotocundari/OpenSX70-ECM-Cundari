@@ -54,6 +54,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/pollers.c
     Core/Src/shutterbutton.c
     Core/Src/counter.c
+    Core/Src/pic_firmware_update.c
 )
 
 # Add include paths

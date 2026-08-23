@@ -1,4 +1,5 @@
 #include "opensx70.h"
+#include "pic_firmware_update.h" 
 
 meter_iso savedISO;
 
@@ -35,6 +36,10 @@ static const camera_state_funct STATE_MACHINE [STATE_N] = {
 camera_state state = STATE_INIT;
 
 void opensx70_run_state_machine (void){
+    if (fw_update_in_progress) {
+        return;   // freeze camera logic entirely while PIC update is in progress
+    }
+    
     state = STATE_MACHINE[state]();
     sonar_focus();
 }

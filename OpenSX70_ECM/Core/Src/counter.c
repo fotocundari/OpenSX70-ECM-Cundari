@@ -1,5 +1,6 @@
 #include "counter.h"
 #include "opensx70.h"
+#include "pic_firmware_update.h"
 
 counter_device current_counter_state;
 
@@ -18,6 +19,11 @@ void initialize_counter_device(counter_device *device)
 
 void update_counter(counter_device *device)
 {
+    if (fw_update_in_progress)
+    {
+        return;   // STM32 is passive on UART1 -- PC/PIC own the bus now
+    }
+
     if (!counter_response_received)
     {
         return;
@@ -27,10 +33,20 @@ void update_counter(counter_device *device)
 
     uint8_t b = counter_uart_buffer[0];
 
+    if (b == PC_UPDATE_TRIGGER_BYTE)
+    {
+        pic_firmware_enter_update_mode();
+        return;   // do NOT re-arm the receiver -- go fully passive
+    }
+
     HAL_UART_Receive_IT(&huart1, counter_uart_buffer, 1);
 
     switch (b)
     {
+        case PC_UPDATE_TRIGGER_BYTE: // Python script on PC requests update mode
+            pic_firmware_enter_update_mode();
+            break;    
+        
         case 0xFE: //signal that counter is at 0 or empty
             device->empty = true;
             modeSelection = true; //mode selection flag true turns off polling the light meter helper 
