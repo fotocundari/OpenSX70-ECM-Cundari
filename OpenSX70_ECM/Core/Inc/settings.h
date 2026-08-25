@@ -6,7 +6,7 @@
 #define SHUTTERDARKSLIDE 0       //1 Enables feature to not eject dark slide until shutter button is pressed
 #define LIGHMETER_HELPER 1       //1 Enables viewfinder light mstruct shutter_speed_timing{
 #define EJECT_AFTER_DEPRESSING 1 //1 Enables the user to hold the shutter button to prevent photo ejection
-#define FUZZY_MANUAL_MODE 0      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
+#define FUZZY_MANUAL_MODE 1      //1 Enables alternate manual mode that varies manual speeds according to solenoid speed.
 
 // ------------------DONGLELESS FEATURES ---------------------
 // If you have a Sonar you can select modes using the shutter button.
@@ -16,9 +16,9 @@
 // Speeds are aranged as follows: slow (1s, 1/2s, 1/4s, 1/8s), medium (1/15s, 1/30s, 1/60s, 1/125s), fast (1/250s, 1/500s, 1/1000s, 1/2000s). The blink rate will change for each speed within a zone.
 // ISO swap is then selected by half pushing the shutter (sonar focus) and then fully pushing the shutter down while its scrolling through the modes. LED will blink to indicate the ISO chosen (red SX70, blue 600).
 // if DONGLELESS_MANUAL_SPEEDS is disabled, ISO Swap works as normal, you will only have access to the 3 modes (self timer (t), double (d), and t-mode (L) unless you have a counter commincator installed using the counter menu 
-#define DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON 1   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
+#define DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON 0   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
 #define MANUAL_SPEED_LOCK 1 // 1 enables the lock where when setting a manual speed donglelessly that speed will stay set until power cylce/door opens. 0 disables the lock and manual speed will only execute once then go back to auto
-
+#define MODEL1_MANUAL 1 // 1 enables model 1 mode so shutter button acts normally but communicator will still work (currently disables any dongleless features from the shutter button)
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.
 // Example values:

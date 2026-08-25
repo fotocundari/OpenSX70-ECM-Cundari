@@ -7,6 +7,7 @@ volatile bool tim17_timeout_flag = false;
 volatile bool multiple_exposure_flag = false;
 volatile bool tim3_timeout_flag = false;
 volatile bool auto_exposure_active = false;
+volatile bool no_flash = false;
 
 void solenoid_init(void){
     HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
@@ -235,7 +236,8 @@ void manual_exposure(struct shutter_speed_timing *timing){
     __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
     tim3_timeout_flag = false;
 
-    if(timing->flash_enabled){
+    
+    if(timing->flash_enabled && !no_flash){
         HAL_GPIO_WritePin(FFA_POWER_EN_GPIO_Port, FFA_POWER_EN_Pin, 0);
     }
 
@@ -248,7 +250,7 @@ void manual_exposure(struct shutter_speed_timing *timing){
     while(!tim3_timeout_flag){
         
     }
-    if(timing->flash_enabled){
+    if(timing->flash_enabled && !no_flash){
         flash();
     }
 
@@ -258,39 +260,6 @@ void manual_exposure(struct shutter_speed_timing *timing){
     exposure_finish();
 }
 
-void manual_exposure_noflash(struct shutter_speed_timing timing){
-    HAL_Delay(Y_DELAY);
-    HAL_SuspendTick();
-
-    htim3.Init.Prescaler = timing.prescaler;
-    htim3.Init.Period = timing.period;
-
-    if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
-    {
-        Error_Handler();
-    }
-
-    __HAL_TIM_SET_COUNTER(&htim3, 0);
-    __HAL_TIM_CLEAR_FLAG(&htim3, TIM_FLAG_UPDATE);
-    tim3_timeout_flag = false;
-
-
-    shutter_open();
-    if(HAL_TIM_Base_Start_IT(&htim3) != HAL_OK) {
-        HAL_TIM_Base_Start_IT(&htim3);
-    }
-
-    while(!tim3_timeout_flag){
-        
-    }
-
-
-    if(HAL_TIM_Base_Stop_IT(&htim3) != HAL_OK) {
-        HAL_TIM_Base_Stop_IT(&htim3);
-    }
-
-    exposure_finish();
-}
 
 #if FUZZY_MANUAL_MODE
 void fuzzy_manual_exposure(struct fuzzy_shutter_speed_timing *timing, meter_iso *iso_setting){
@@ -331,7 +300,7 @@ void fuzzy_manual_exposure(struct fuzzy_shutter_speed_timing *timing, meter_iso 
     HAL_SuspendTick();
 
 
-    if(timing->flash_enabled){
+    if(timing->flash_enabled && !no_flash){
         HAL_GPIO_WritePin(FFA_POWER_EN_GPIO_Port, FFA_POWER_EN_Pin, 0);
     }
 
@@ -353,7 +322,7 @@ void fuzzy_manual_exposure(struct fuzzy_shutter_speed_timing *timing, meter_iso 
        } 
     }
 
-    if(timing->flash_enabled){
+    if(timing->flash_enabled && !no_flash){
         flash();
     }
 

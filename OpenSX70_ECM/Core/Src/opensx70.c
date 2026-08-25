@@ -90,7 +90,9 @@ camera_state do_state_noDongle (void){
     if(S1_state.S1T_state){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+      
         
+
       if(multiple_exposure_flag){
             mexp_count++;
             if (mexp_count >= 2){
@@ -114,7 +116,13 @@ camera_state do_state_noDongle (void){
         
             
             if (current_counter_state.manualMode){
-                manual_exposure_noflash(ShutterSpeedTiming[current_counter_state.manualSpeed]);
+            no_flash = true;    
+            #if FUZZY_MANUAL_MODE
+            fuzzy_manual_exposure(&FuzzyShutterSpeedTiming[current_counter_state.manualSpeed], &savedISO); //will need to create a no flash for 680s
+            #else
+            manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]); //need to use no flash or it triggers the flash even when off on 680s
+            #endif
+                //manual_exposure_noflash(ShutterSpeedTiming[current_counter_state.manualSpeed]);
                 
                #if !MANUAL_SPEED_LOCK 
                 current_counter_state.manualMode = false;
@@ -159,7 +167,13 @@ camera_state do_state_flashBar (void){
         } else {
 
             if (current_counter_state.manualMode){
-                manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
+                //manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
+            no_flash = false;
+            #if FUZZY_MANUAL_MODE
+            fuzzy_manual_exposure(&FuzzyShutterSpeedTiming[current_counter_state.manualSpeed], &savedISO);
+            #else
+            manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
+            #endif
                 current_counter_state.manualMode = false;
             }
             else{
@@ -354,6 +368,7 @@ void self_timer(void){
 
         } else if (i == 0) {
             mirror_up();
+            HAL_Delay(500);
         }
 
 }
@@ -428,7 +443,7 @@ void s1_iso_swap(void){
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
     
-    #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON
+    #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON || !MODEL1_MANUAL
         int speedzoneflip = 0;
         int speedflip = 0;
         int flashspeed = 500;
@@ -541,7 +556,10 @@ void s1_iso_swap(void){
         }        
     #endif    
         
-    } else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
+    } 
+    
+    #if !MODEL1_MANUAL
+    else if (HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
         modeSelection = true;
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET){
@@ -611,8 +629,8 @@ void s1_iso_swap(void){
         firstrun = false;
 
             }
-
-        #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON   
+        
+        #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON || !MODEL1_MANUAL
         if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         
         meter_iso newISO;
@@ -638,12 +656,12 @@ void s1_iso_swap(void){
         while(HAL_GPIO_ReadPin(S1F_GPIO_Port, S1F_Pin) == GPIO_PIN_SET);
         }
         #endif
-
+       
          
    }
 
     }
-   
+   #endif
 
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);

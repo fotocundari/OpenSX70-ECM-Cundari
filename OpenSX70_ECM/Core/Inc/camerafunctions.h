@@ -17,6 +17,7 @@ extern volatile bool tim3_timeout_flag;
 extern volatile bool tim16_timeout_flag;
 extern volatile bool tim17_timeout_flag;
 extern volatile bool multiple_exposure_flag;
+extern volatile bool no_flash;
 
 void solenoid_init(void);
 void shutter_close(void);
