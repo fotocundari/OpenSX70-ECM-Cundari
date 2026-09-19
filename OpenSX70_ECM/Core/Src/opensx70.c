@@ -90,7 +90,7 @@ camera_state do_state_noDongle (void){
     if(S1_state.S1T_state){
         HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-      
+        
         
 
       if(multiple_exposure_flag){
@@ -104,7 +104,6 @@ camera_state do_state_noDongle (void){
 
         if(current_counter_state.selfTimer){
             self_timer();
-            current_counter_state.selfTimer = false;
         }
 
         begin_exposure();
@@ -137,6 +136,10 @@ camera_state do_state_noDongle (void){
             }   
     
     }
+        if(current_counter_state.selfTimer){
+            current_counter_state.selfTimer = false;
+        }
+
     }
 
     dongleless_display(500);
@@ -157,7 +160,6 @@ camera_state do_state_flashBar (void){
        
         if(current_counter_state.selfTimer){
             self_timer();
-            current_counter_state.selfTimer = false;
         }
 
         begin_exposure();
@@ -172,7 +174,7 @@ camera_state do_state_flashBar (void){
             #if FUZZY_MANUAL_MODE
             fuzzy_manual_exposure(&FuzzyShutterSpeedTiming[current_counter_state.manualSpeed], &savedISO);
             #else
-            manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
+                manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
             #endif
                 current_counter_state.manualMode = false;
             }
@@ -181,6 +183,11 @@ camera_state do_state_flashBar (void){
             }   
 
         }
+
+        if(current_counter_state.selfTimer){
+            current_counter_state.selfTimer = false;
+        }
+
     }
     dongleless_display(500);
     return return_state(&current_dongle_state);
@@ -443,7 +450,7 @@ void s1_iso_swap(void){
     if(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_SET){
         isoBlinked = true;  
     
-    #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON || !MODEL1_MANUAL
+    #if DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON
         int speedzoneflip = 0;
         int speedflip = 0;
         int flashspeed = 500;

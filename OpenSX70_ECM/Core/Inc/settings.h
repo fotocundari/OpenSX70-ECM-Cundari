@@ -18,7 +18,7 @@
 // if DONGLELESS_MANUAL_SPEEDS is disabled, ISO Swap works as normal, you will only have access to the 3 modes (self timer (t), double (d), and t-mode (L) unless you have a counter commincator installed using the counter menu 
 #define DONGLELESS_MANUAL_SPEEDS_ONSHUTTERBUTTON 0   //1 Enables manual speeds using shutter button. 0 disables manual speeds using shutter button
 #define MANUAL_SPEED_LOCK 1 // 1 enables the lock where when setting a manual speed donglelessly that speed will stay set until power cylce/door opens. 0 disables the lock and manual speed will only execute once then go back to auto
-#define MODEL1_MANUAL 0 // 1 enables model 1 mode so shutter button acts normally but communicator will still work (currently disables any dongleless features from the shutter button)
+#define MODEL1_MANUAL 0 // 1 enables model 1 mode so shutter button acts normally
 //----------------DONGLE SWITCH FEATURE SELECTION-------------------------
 // 1 and 2 values assign features to switch 1 and 2, 0 means unused.
 // Example values:
@@ -33,12 +33,13 @@
 
 #define MEXP_MODE 1
 #define SELF_TIMER 2
+#define SELF_TIMER_HOLDFILM 1
 
 //----------------END DONGLE SWITCH FEATURE SELECTION---------------------
 
 //---------------MAGIC NUMBERS---------------------------------------------
 #define A100 4093 //4093 normally less than max value as watchdog requires exceeding value to trigger
-#define A600 1200 // (1200 original - 1500 for my sonar)
+#define A600 1200// (1200 original - 1500 for my sonar 1440 for my 680)
 #define FD100 2809 //2809 normally
 #define FF100 3652 //3652 normally
 #define FD600 700

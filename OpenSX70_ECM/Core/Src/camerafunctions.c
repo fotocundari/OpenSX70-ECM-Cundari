@@ -1,5 +1,7 @@
 #include "camerafunctions.h"
 #include "peripheralport.h"
+#include "counter.h"
+
 
 volatile bool auto_timeout_flag = false;
 volatile bool tim16_timeout_flag = false;
@@ -404,8 +406,13 @@ void exposure_finish(){
         HAL_TIM_Base_Start_IT(&htim14);
         HAL_Delay(100);
         return;
-    }
+    }   
     else{
+        #if SELF_TIMER_HOLDFILM
+    if(current_counter_state.selfTimer || get_switch_state(SELF_TIMER)){
+    while(HAL_GPIO_ReadPin(S1T_GPIO_Port, S1T_Pin) == GPIO_PIN_RESET);
+    }
+    #endif
         mirror_down();
         shutter_open();
         HAL_Delay(100);
