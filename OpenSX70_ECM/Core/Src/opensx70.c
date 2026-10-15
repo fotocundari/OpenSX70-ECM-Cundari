@@ -176,7 +176,10 @@ camera_state do_state_flashBar (void){
             #else
                 manual_exposure(&ShutterSpeedTiming[current_counter_state.manualSpeed]);
             #endif
+
+                #if !MANUAL_SPEED_LOCK 
                 current_counter_state.manualMode = false;
+                #endif
             }
             else{
                 auto_exposure_flashbar(&savedISO);
